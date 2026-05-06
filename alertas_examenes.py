@@ -56,6 +56,7 @@ def cargar_matriz(bytes_excel):
 
     data = df.iloc[4:].copy()
     data.columns = encabezados
+    data = data.loc[:, ~data.columns.str.match(r"^_\\d+$")]
     data = data.loc[:, data.columns != ""]
     data = data.dropna(how="all")
     data = data.reset_index(drop=True)
@@ -68,17 +69,10 @@ def preparar_datos(df):
     if "FECHA EXAMEN PERIODICO" not in df.columns:
         raise Exception("No se encontró la columna FECHA EXAMEN PERIODICO")
 
-    if "PERIODICIDAD_1" not in df.columns:
-        raise Exception("No se encontró la columna PERIODICIDAD_1 del examen periódico")
-
     df["FECHA EXAMEN PERIODICO"] = pd.to_datetime(df["FECHA EXAMEN PERIODICO"], errors="coerce")
-    df["PERIODICIDAD_1"] = pd.to_numeric(df["PERIODICIDAD_1"], errors="coerce").fillna(1)
 
-    df["FECHA PROXIMO EXAMEN"] = df.apply(
-        lambda row: row["FECHA EXAMEN PERIODICO"] + pd.DateOffset(years=int(row["PERIODICIDAD_1"]))
-        if pd.notnull(row["FECHA EXAMEN PERIODICO"]) else pd.NaT,
-        axis=1
-    )
+    # Regla corporativa: examen ocupacional periódico vence cada 1 año
+    df["FECHA PROXIMO EXAMEN"] = df["FECHA EXAMEN PERIODICO"] + pd.DateOffset(years=1)
 
     hoy = pd.Timestamp.now().normalize()
     df["DIAS_RESTANTES"] = (df["FECHA PROXIMO EXAMEN"] - hoy).dt.days
