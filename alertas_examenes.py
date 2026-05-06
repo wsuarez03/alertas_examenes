@@ -34,12 +34,25 @@ def normalizar_columnas(cols):
         nuevas.append(c)
     return nuevas
 
+def hacer_columnas_unicas(cols):
+    contador = {}
+    nuevas = []
+
+    for c in cols:
+        if c in contador:
+            contador[c] += 1
+            nuevas.append(f"{c}_{contador[c]}")
+        else:
+            contador[c] = 0
+            nuevas.append(c)
+
+    return nuevas
 # ================= LEER MATRIZ =================
 def cargar_matriz(bytes_excel):
     df = pd.read_excel(io.BytesIO(bytes_excel), sheet_name="Matriz de EMO", header=None)
 
     encabezados = df.iloc[3].fillna("").astype(str).tolist()
-    encabezados = normalizar_columnas(encabezados)
+    encabezados = hacer_columnas_unicas(encabezados)
 
     data = df.iloc[4:].copy()
     data.columns = encabezados
@@ -52,14 +65,20 @@ def cargar_matriz(bytes_excel):
 
 # ================= PREPARAR DATOS =================
 def preparar_datos(df):
-    if "FECHA PROXIMO EXAMEN" not in df.columns:
-        raise Exception("No se encontró la columna FECHA PROXIMO EXAMEN")
+    if "FECHA EXAMEN PERIODICO" not in df.columns:
+        raise Exception("No se encontró la columna FECHA EXAMEN PERIODICO")
 
-    if "FECHA ULTIMO EXAMEN" not in df.columns:
-        raise Exception("No se encontró la columna FECHA ULTIMO EXAMEN")
+    if "PERIODICIDAD_1" not in df.columns:
+        raise Exception("No se encontró la columna PERIODICIDAD_1 del examen periódico")
 
-    df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(df["FECHA PROXIMO EXAMEN"], errors="coerce")
-    df["FECHA ULTIMO EXAMEN"] = pd.to_datetime(df["FECHA ULTIMO EXAMEN"], errors="coerce")
+    df["FECHA EXAMEN PERIODICO"] = pd.to_datetime(df["FECHA EXAMEN PERIODICO"], errors="coerce")
+    df["PERIODICIDAD_1"] = pd.to_numeric(df["PERIODICIDAD_1"], errors="coerce").fillna(1)
+
+    df["FECHA PROXIMO EXAMEN"] = df.apply(
+        lambda row: row["FECHA EXAMEN PERIODICO"] + pd.DateOffset(years=int(row["PERIODICIDAD_1"]))
+        if pd.notnull(row["FECHA EXAMEN PERIODICO"]) else pd.NaT,
+        axis=1
+    )
 
     hoy = pd.Timestamp.now().normalize()
     df["DIAS_RESTANTES"] = (df["FECHA PROXIMO EXAMEN"] - hoy).dt.days
