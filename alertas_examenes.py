@@ -96,10 +96,11 @@ def tabla_html(df):
         "DOCUMENTO",
         "NOMBRES Y APELLIDOS",
         "CARGO",
-        "FECHA ULTIMO EXAMEN",
         "FECHA PROXIMO EXAMEN",
         "DIAS_RESTANTES"
     ]].copy()
+
+    mostrar["FECHA PROXIMO EXAMEN"] = mostrar["FECHA PROXIMO EXAMEN"].dt.strftime("%Y-%m-%d")
 
     return mostrar.to_html(index=False, border=1)
 # ================= ENVIAR CORREO =================
