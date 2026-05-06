@@ -37,11 +37,13 @@ def normalizar_columnas(cols):
 # ================= LEER MATRIZ =================
 def cargar_matriz(bytes_excel):
     df = pd.read_excel(io.BytesIO(bytes_excel), sheet_name="Matriz de EMO", header=None)
-    encabezados = df.iloc[2].fillna("").astype(str).tolist()
+
+    encabezados = df.iloc[3].fillna("").astype(str).tolist()
     encabezados = normalizar_columnas(encabezados)
 
     data = df.iloc[4:].copy()
     data.columns = encabezados
+    data = data.loc[:, data.columns != ""]
     data = data.dropna(how="all")
     data = data.reset_index(drop=True)
 
