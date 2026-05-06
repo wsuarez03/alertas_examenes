@@ -56,8 +56,8 @@ def cargar_matriz(bytes_excel):
 
     data = df.iloc[4:].copy()
     data.columns = encabezados
-    data = data.loc[:, ~data.columns.str.match(r"^_\\d+$")]
-    data = data.loc[:, data.columns != ""]
+    data = data.dropna(how="all")
+    data = data.reset_index(drop=True)
     data = data.dropna(how="all")
     data = data.reset_index(drop=True)
 
@@ -66,16 +66,19 @@ def cargar_matriz(bytes_excel):
 
 # ================= PREPARAR DATOS =================
 def preparar_datos(df):
-    if "FECHA EXAMEN PERIODICO" not in df.columns:
-        raise Exception("No se encontró la columna FECHA EXAMEN PERIODICO")
+    # solo filas que tengan documento/cédula
+    df = df[df.iloc[:, 0].notna()]
+    df = df[df.iloc[:, 0].astype(str).str.strip() != ""]
 
-    df["FECHA EXAMEN PERIODICO"] = pd.to_datetime(df["FECHA EXAMEN PERIODICO"], errors="coerce")
-
-    # Regla corporativa: examen ocupacional periódico vence cada 1 año
-    df["FECHA PROXIMO EXAMEN"] = df["FECHA EXAMEN PERIODICO"] + pd.DateOffset(years=1)
+    # tomar fecha próximo examen por posición fija columna 23
+    df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(df.iloc[:, 22], errors="coerce", dayfirst=True)
 
     hoy = pd.Timestamp.now().normalize()
     df["DIAS_RESTANTES"] = (df["FECHA PROXIMO EXAMEN"] - hoy).dt.days
+
+    print("Total empleados válidos:", len(df))
+    print("Fechas próximo examen válidas:", df["FECHA PROXIMO EXAMEN"].notna().sum())
+    print(df[["DOCUMENTO", "NOMBRES Y APELLIDOS", "FECHA PROXIMO EXAMEN", "DIAS_RESTANTES"]].head(10))
 
     return df
 # ================= CLASIFICAR ALERTAS =================
