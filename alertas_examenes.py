@@ -6,9 +6,15 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
+
 # ================= CONFIGURACION =================
 EXCEL_URL = "https://valserindustriales-my.sharepoint.com/:x:/p/tecnicodeservicios/IQBHL5qr_uy7TaGi8d3JmyrcActHkB__4ttACgX8ASGC47U?e=OT7mJb&download=1"
-CORREOS_DESTINO = ["tecnicodeservicios@valserindustriales.com","sst@valserindustriales.com"]
+
+CORREOS_DESTINO = [
+    "tecnicodeservicios@valserindustriales.com",
+    "sst@valserindustriales.com"
+]
+
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USER = os.getenv("SMTP_USER")
@@ -47,6 +53,7 @@ def hacer_columnas_unicas(cols):
             nuevas.append(c)
 
     return nuevas
+
 # ================= LEER MATRIZ =================
 def cargar_matriz(bytes_excel):
     df = pd.read_excel(io.BytesIO(bytes_excel), sheet_name="Matriz de EMO", header=None)
@@ -58,54 +65,74 @@ def cargar_matriz(bytes_excel):
     data.columns = encabezados
     data = data.dropna(how="all")
     data = data.reset_index(drop=True)
-    data = data.dropna(how="all")
-    data = data.reset_index(drop=True)
 
     print("Columnas detectadas:", data.columns.tolist())
     return data
 
 # ================= PREPARAR DATOS =================
 def preparar_datos(df):
-    # solo filas que tengan documento/cédula
+    # solo filas con documento
     df = df[df.iloc[:, 0].notna()]
     df = df[df.iloc[:, 0].astype(str).str.strip() != ""]
 
-    # tomar fecha próximo examen por posición fija columna 23
-    df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(df.iloc[:, 22], errors="coerce", dayfirst=True)
-
     hoy = pd.Timestamp.now().normalize()
-    df["DIAS_RESTANTES"] = (df["FECHA PROXIMO EXAMEN"] - hoy).dt.days
+
+    # ===== EXAMENES OCUPACIONALES -> columna 23 = indice 22
+    df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(df.iloc[:, 22], errors="coerce", dayfirst=True)
+    df["DIAS_EXAMEN"] = (df["FECHA PROXIMO EXAMEN"] - hoy).dt.days
+
+    # ===== CERTIFICADO ALTURAS -> columna 8 = indice 7
+    df["FECHA ACTUALIZACION ALTURAS"] = pd.to_datetime(df.iloc[:, 7], errors="coerce", dayfirst=True)
+    df["DIAS_ALTURAS"] = (df["FECHA ACTUALIZACION ALTURAS"] - hoy).dt.days
 
     print("Total empleados válidos:", len(df))
-    print("Fechas próximo examen válidas:", df["FECHA PROXIMO EXAMEN"].notna().sum())
-    print(df[["DOCUMENTO", "NOMBRES Y APELLIDOS", "FECHA PROXIMO EXAMEN", "DIAS_RESTANTES"]].head(10))
+    print("Fechas examen válidas:", df["FECHA PROXIMO EXAMEN"].notna().sum())
+    print("Fechas alturas válidas:", df["FECHA ACTUALIZACION ALTURAS"].notna().sum())
 
     return df
-# ================= CLASIFICAR ALERTAS =================
-def clasificar_alertas(df):
-    preventivo = df[(df["DIAS_RESTANTES"] >= 16) & (df["DIAS_RESTANTES"] <= 45)]
-    prioritario = df[(df["DIAS_RESTANTES"] >= 0) & (df["DIAS_RESTANTES"] <= 15)]
-    critico = df[(df["DIAS_RESTANTES"] < 0)]
+
+# ================= CLASIFICAR ALERTAS GENERICO =================
+def clasificar_alertas(df, columna_dias):
+    preventivo = df[(df[columna_dias] >= 16) & (df[columna_dias] <= 45)]
+    prioritario = df[(df[columna_dias] >= 0) & (df[columna_dias] <= 15)]
+    critico = df[(df[columna_dias] < 0)]
     return preventivo, prioritario, critico
-# ================= TABLA HTML =================
-def tabla_html(df):
+
+# ================= TABLA HTML GENERICA =================
+def tabla_html(df, tipo="examen"):
     if df.empty:
         return "<p>No aplica.</p>"
 
-    mostrar = df[[
-        "DOCUMENTO",
-        "NOMBRES Y APELLIDOS",
-        "CARGO",
-        "FECHA PROXIMO EXAMEN",
-        "DIAS_RESTANTES"
-    ]].copy()
+    if tipo == "examen":
+        mostrar = df[[
+            "DOCUMENTO",
+            "NOMBRES Y APELLIDOS",
+            "CARGO",
+            "FECHA PROXIMO EXAMEN",
+            "DIAS_EXAMEN"
+        ]].copy()
 
-    mostrar["FECHA PROXIMO EXAMEN"] = mostrar["FECHA PROXIMO EXAMEN"].dt.strftime("%Y-%m-%d")
+        mostrar["FECHA PROXIMO EXAMEN"] = mostrar["FECHA PROXIMO EXAMEN"].dt.strftime("%Y-%m-%d")
+        mostrar.rename(columns={"DIAS_EXAMEN": "DIAS_RESTANTES"}, inplace=True)
+
+    else:
+        mostrar = df[[
+            "DOCUMENTO",
+            "NOMBRES Y APELLIDOS",
+            "CARGO",
+            "FECHA ACTUALIZACION ALTURAS",
+            "DIAS_ALTURAS"
+        ]].copy()
+
+        mostrar["FECHA ACTUALIZACION ALTURAS"] = mostrar["FECHA ACTUALIZACION ALTURAS"].dt.strftime("%Y-%m-%d")
+        mostrar.rename(columns={"DIAS_ALTURAS": "DIAS_RESTANTES"}, inplace=True)
 
     return mostrar.to_html(index=False, border=1)
+
 # ================= ENVIAR CORREO =================
-def enviar_correo(prev, prio, crit):
-    total = len(prev) + len(prio) + len(crit)
+def enviar_correo(pe, pre, ce, pa, pra, ca):
+    total = len(pe)+len(pre)+len(ce)+len(pa)+len(pra)+len(ca)
+
     if total == 0:
         print("Sin novedades, no se envia correo.")
         return
@@ -113,6 +140,7 @@ def enviar_correo(prev, prio, crit):
     html = f"""
     <html>
     <body style='font-family:Arial,sans-serif;'>
+
         <div style='background:#0b3d91;color:white;padding:15px;border-radius:8px;'>
             <h2>🔔 SISTEMA AUTOMÁTICO DE ALERTAS SST</h2>
             <h3>VALVULAS Y SERVICIOS INDUSTRIALES S.A.S</h3>
@@ -121,31 +149,61 @@ def enviar_correo(prev, prio, crit):
 
         <br>
 
+        <h2 style='color:#0b3d91;'>🔵 RESUMEN GENERAL EXÁMENES OCUPACIONALES</h2>
         <table style='width:100%;text-align:center;border-collapse:collapse;'>
             <tr>
-                <td style='background:#d4edda;padding:12px;border:1px solid #ccc;'><b>🟢 Preventivos</b><br>{len(prev)}</td>
-                <td style='background:#fff3cd;padding:12px;border:1px solid #ccc;'><b>🟡 Prioritarios</b><br>{len(prio)}</td>
-                <td style='background:#f8d7da;padding:12px;border:1px solid #ccc;'><b>🔴 Críticos/Vencidos</b><br>{len(crit)}</td>
+                <td style='background:#d4edda;padding:12px;border:1px solid #ccc;'><b>🟢 Preventivos</b><br>{len(pe)}</td>
+                <td style='background:#fff3cd;padding:12px;border:1px solid #ccc;'><b>🟡 Prioritarios</b><br>{len(pre)}</td>
+                <td style='background:#f8d7da;padding:12px;border:1px solid #ccc;'><b>🔴 Críticos/Vencidos</b><br>{len(ce)}</td>
             </tr>
         </table>
 
-        <br><h3 style='color:green;'>🟢 PERSONAL EN ALERTA PREVENTIVA (16 a 45 días)</h3>
-        {tabla_html(prev)}
+        <br>
 
-        <br><h3 style='color:#b8860b;'>🟡 PERSONAL EN ALERTA PRIORITARIA (0 a 15 días)</h3>
-        {tabla_html(prio)}
+        <h2 style='color:purple;'>🟣 RESUMEN GENERAL CERTIFICADO DE ALTURAS</h2>
+        <table style='width:100%;text-align:center;border-collapse:collapse;'>
+            <tr>
+                <td style='background:#d4edda;padding:12px;border:1px solid #ccc;'><b>🟢 Preventivos</b><br>{len(pa)}</td>
+                <td style='background:#fff3cd;padding:12px;border:1px solid #ccc;'><b>🟡 Prioritarios</b><br>{len(pra)}</td>
+                <td style='background:#f8d7da;padding:12px;border:1px solid #ccc;'><b>🔴 Críticos/Vencidos</b><br>{len(ca)}</td>
+            </tr>
+        </table>
 
-        <br><h3 style='color:red;'>🔴 PERSONAL CRÍTICO / EXÁMENES VENCIDOS</h3>
-        {tabla_html(crit)}
+        <br><hr>
+
+        <h2 style='color:#0b3d91;'>🟢🟡🔴 TABLAS DETALLADAS EXÁMENES OCUPACIONALES</h2>
+
+        <h3 style='color:green;'>🟢 PERSONAL EN ALERTA PREVENTIVA EXÁMENES</h3>
+        {tabla_html(pe, "examen")}
+
+        <h3 style='color:#b8860b;'>🟡 PERSONAL EN ALERTA PRIORITARIA EXÁMENES</h3>
+        {tabla_html(pre, "examen")}
+
+        <h3 style='color:red;'>🔴 PERSONAL CRÍTICO / EXÁMENES VENCIDOS</h3>
+        {tabla_html(ce, "examen")}
+
+        <br><hr>
+
+        <h2 style='color:purple;'>🟢🟡🔴 TABLAS DETALLADAS CERTIFICADO DE ALTURAS</h2>
+
+        <h3 style='color:green;'>🟢 PERSONAL EN ALERTA PREVENTIVA ALTURAS</h3>
+        {tabla_html(pa, "alturas")}
+
+        <h3 style='color:#b8860b;'>🟡 PERSONAL EN ALERTA PRIORITARIA ALTURAS</h3>
+        {tabla_html(pra, "alturas")}
+
+        <h3 style='color:red;'>🔴 PERSONAL CRÍTICO / CERTIFICADO VENCIDO ALTURAS</h3>
+        {tabla_html(ca, "alturas")}
 
         <br><hr>
         <p style='font-size:12px;color:gray;'>Este correo fue generado automáticamente por el Sistema de Vigilancia Documental SST - VALSER.</p>
+
     </body>
     </html>
     """
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "🔔 Alerta SST - Exámenes Ocupacionales"
+    msg["Subject"] = "🔔 Alerta SST - Exámenes Ocupacionales y Certificados de Alturas"
     msg["From"] = SMTP_USER
     msg["To"] = ", ".join(CORREOS_DESTINO)
     msg.attach(MIMEText(html, "html"))
@@ -157,14 +215,19 @@ def enviar_correo(prev, prio, crit):
     server.quit()
 
     print("Correo enviado correctamente")
-    # ================= MAIN =================
+
+# ================= MAIN =================
 def main():
     try:
         bytes_excel = descargar_excel()
         df = cargar_matriz(bytes_excel)
         df = preparar_datos(df)
-        prev, prio, crit = clasificar_alertas(df)
-        enviar_correo(prev, prio, crit)
+
+        pe, pre, ce = clasificar_alertas(df, "DIAS_EXAMEN")
+        pa, pra, ca = clasificar_alertas(df, "DIAS_ALTURAS")
+
+        enviar_correo(pe, pre, ce, pa, pra, ca)
+
     except Exception as e:
         print("ERROR GENERAL:", str(e))
         raise
