@@ -151,7 +151,7 @@ def enviar_correo(pe, pre, ce, pa, pra, ca):
 
         <br>
 
-        <h2 style='color:#0b3d91;'>🩺 RESUMEN GENERAL EXÁMENES OCUPACIONALES</h2>
+        <h2 style='color:black;'>🩺 RESUMEN GENERAL EXÁMENES OCUPACIONALES</h2>
         <table style='width:100%;text-align:center;border-collapse:collapse;'>
             <tr>
                 <td style='background:#d4edda;padding:12px;border:1px solid #ccc;'><b>🟢 Preventivos</b><br>{len(pe)}</td>
@@ -162,7 +162,7 @@ def enviar_correo(pe, pre, ce, pa, pra, ca):
 
         <br>
 
-        <h2 style='color:purple;'>⛑️ RESUMEN GENERAL CERTIFICADO DE ALTURAS</h2>
+        <h2 style='color:black;'>⛑️ RESUMEN GENERAL CERTIFICADO DE ALTURAS</h2>
         <table style='width:100%;text-align:center;border-collapse:collapse;'>
             <tr>
                 <td style='background:#d4edda;padding:12px;border:1px solid #ccc;'><b>🟢 Preventivos</b><br>{len(pa)}</td>
@@ -173,7 +173,7 @@ def enviar_correo(pe, pre, ce, pa, pra, ca):
 
         <br><hr>
 
-        <h2 style='color:#0b3d91;'>🩺 TABLAS DETALLADAS EXÁMENES OCUPACIONALES</h2>
+        <h2 style='color:black;'>🩺 TABLAS DETALLADAS EXÁMENES OCUPACIONALES</h2>
 
         <h3 style='color:green;'>🟢 PERSONAL EN ALERTA PREVENTIVA EXÁMENES</h3>
         {tabla_html(pe, "examen")}
@@ -186,7 +186,7 @@ def enviar_correo(pe, pre, ce, pa, pra, ca):
 
         <br><hr>
 
-        <h2 style='color:purple;'>⛑️ TABLAS DETALLADAS CERTIFICADO DE ALTURAS</h2>
+        <h2 style='color:black;'>⛑️ TABLAS DETALLADAS CERTIFICADO DE ALTURAS</h2>
 
         <h3 style='color:green;'>🟢 PERSONAL EN ALERTA PREVENTIVA ALTURAS</h3>
         {tabla_html(pa, "alturas")}
