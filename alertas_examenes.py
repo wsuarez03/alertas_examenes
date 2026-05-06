@@ -83,6 +83,9 @@ def preparar_datos(df):
     # ===== CERTIFICADO ALTURAS -> columna 8 = indice 7
     df["FECHA ACTUALIZACION ALTURAS"] = pd.to_datetime(df.iloc[:, 7], errors="coerce", dayfirst=True)
     df["DIAS_ALTURAS"] = (df["FECHA ACTUALIZACION ALTURAS"] - hoy).dt.days
+    
+    df["DIAS_EXAMEN"] = df["DIAS_EXAMEN"].astype("Int64")
+    df["DIAS_ALTURAS"] = df["DIAS_ALTURAS"].astype("Int64")
 
     print("Total empleados válidos:", len(df))
     print("Fechas examen válidas:", df["FECHA PROXIMO EXAMEN"].notna().sum())
