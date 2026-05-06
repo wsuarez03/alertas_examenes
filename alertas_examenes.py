@@ -7,7 +7,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
 # ================= CONFIGURACION =================
-EXCEL_URL = "https://usc-excel.officeapps.live.com/x/_layouts/XlFileHandler.aspx?WacUserType=WOPI&usid=d5f43942-f873-3825-b549-2289a4cdda9c&NoAuth=1&waccluster=PUS5"
+EXCEL_URL = "https://valserindustriales-my.sharepoint.com/:x:/p/tecnicodeservicios/IQBHL5qr_uy7TaGi8d3JmyrcActHkB__4ttACgX8ASGC47U?e=OT7mJb&download=1"
 CORREOS_DESTINO = ["tecnicodeservicios@valserindustriales.com"]
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
