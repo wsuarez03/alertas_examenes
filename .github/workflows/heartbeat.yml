@@ -1,0 +1,26 @@
+name: Heartbeat Repository Keeper
+
+on:
+  schedule:
+    - cron: '0 12 */5 * *'
+  workflow_dispatch:
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Actualizar heartbeat
+        run: |
+          echo "Heartbeat $(date)" >> heartbeat.log
+
+      - name: Commit actividad
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add heartbeat.log
+          git commit -m "heartbeat auto update" || echo "Sin cambios"
+          git push
