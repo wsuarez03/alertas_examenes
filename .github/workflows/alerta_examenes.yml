@@ -2,7 +2,7 @@ name: Alerta Examenes Ocupacionales
 
 on:
   schedule:
-    - cron: '0 12 15,30 * *'
+    - cron: '30 12 15,30 * *'
   workflow_dispatch:
 
 jobs:
