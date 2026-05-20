@@ -71,40 +71,38 @@ def cargar_matriz(bytes_excel):
 
 # ================= PREPARAR DATOS =================
 def preparar_datos(df):
+
     # solo filas con documento
     df = df[df.iloc[:, 0].notna()]
     df = df[df.iloc[:, 0].astype(str).str.strip() != ""]
 
     hoy = pd.Timestamp.now().normalize()
 
-        # ===== EXAMENES OCUPACIONALES
-        df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(
-            df["FECHA EXAMEN PERIODICO"],
-            errors="coerce",
-            dayfirst=True
-        )
-        
-        df["DIAS_EXAMEN"] = (
-            df["FECHA PROXIMO EXAMEN"] - hoy
-        ).dt.days
-        
-        # ===== CERTIFICADO ALTURAS
-        df["FECHA ACTUALIZACION ALTURAS"] = pd.to_datetime(
-            df["FECHA PARA ACTUALIZACION"],
-            errors="coerce",
-            dayfirst=True
-        )
+    # ===== EXAMENES OCUPACIONALES
+    df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(
+        df["FECHA EXAMEN PERIODICO"],
+        errors="coerce",
+        dayfirst=True
+    )
 
-        df["DIAS_ALTURAS"] = (
-            df["FECHA ACTUALIZACION ALTURAS"] - hoy
-        ).dt.days
-        
-        # limpiar formato visual
-        df["DIAS_EXAMEN"] = df["DIAS_EXAMEN"].astype("Int64")
-        df["DIAS_ALTURAS"] = df["DIAS_ALTURAS"].astype("Int64")
-            
-            df["DIAS_EXAMEN"] = df["DIAS_EXAMEN"].astype("Int64")
-            df["DIAS_ALTURAS"] = df["DIAS_ALTURAS"].astype("Int64")
+    df["DIAS_EXAMEN"] = (
+        df["FECHA PROXIMO EXAMEN"] - hoy
+    ).dt.days
+
+    # ===== CERTIFICADO ALTURAS
+    df["FECHA ACTUALIZACION ALTURAS"] = pd.to_datetime(
+        df["FECHA PARA ACTUALIZACION"],
+        errors="coerce",
+        dayfirst=True
+    )
+
+    df["DIAS_ALTURAS"] = (
+        df["FECHA ACTUALIZACION ALTURAS"] - hoy
+    ).dt.days
+
+    # ===== LIMPIAR FORMATO VISUAL
+    df["DIAS_EXAMEN"] = df["DIAS_EXAMEN"].astype("Int64")
+    df["DIAS_ALTURAS"] = df["DIAS_ALTURAS"].astype("Int64")
 
     print("Total empleados válidos:", len(df))
     print("Fechas examen válidas:", df["FECHA PROXIMO EXAMEN"].notna().sum())
