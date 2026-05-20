@@ -77,13 +77,31 @@ def preparar_datos(df):
 
     hoy = pd.Timestamp.now().normalize()
 
-    # ===== EXAMENES OCUPACIONALES -> columna 23 = indice 22
-    df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(df.iloc[:, 22], errors="coerce", dayfirst=True)
-    df["DIAS_EXAMEN"] = (df["FECHA PROXIMO EXAMEN"] - hoy).dt.days
+# ===== EXAMENES OCUPACIONALES
+df["FECHA PROXIMO EXAMEN"] = pd.to_datetime(
+    df["FECHA EXAMEN PERIODICO"],
+    errors="coerce",
+    dayfirst=True
+)
 
-    # ===== CERTIFICADO ALTURAS -> columna 8 = indice 7
-    df["FECHA ACTUALIZACION ALTURAS"] = pd.to_datetime(df.iloc[:, 7], errors="coerce", dayfirst=True)
-    df["DIAS_ALTURAS"] = (df["FECHA ACTUALIZACION ALTURAS"] - hoy).dt.days
+df["DIAS_EXAMEN"] = (
+    df["FECHA PROXIMO EXAMEN"] - hoy
+).dt.days
+
+# ===== CERTIFICADO ALTURAS
+df["FECHA ACTUALIZACION ALTURAS"] = pd.to_datetime(
+    df["FECHA PARA ACTUALIZACION"],
+    errors="coerce",
+    dayfirst=True
+)
+
+df["DIAS_ALTURAS"] = (
+    df["FECHA ACTUALIZACION ALTURAS"] - hoy
+).dt.days
+
+# limpiar formato visual
+df["DIAS_EXAMEN"] = df["DIAS_EXAMEN"].astype("Int64")
+df["DIAS_ALTURAS"] = df["DIAS_ALTURAS"].astype("Int64")
     
     df["DIAS_EXAMEN"] = df["DIAS_EXAMEN"].astype("Int64")
     df["DIAS_ALTURAS"] = df["DIAS_ALTURAS"].astype("Int64")
