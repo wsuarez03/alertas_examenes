@@ -11,8 +11,8 @@ from datetime import datetime
 EXCEL_URL = "https://valserindustriales-my.sharepoint.com/:x:/p/sst/IQBrBvFaNIKdS4PM-S-5DxgMAS6dHMmzLp9DMHRM2fTcwJ0?e=9XHSzo&download=1"
 
 CORREOS_DESTINO = [
-    "sst@valserindustriales.com",
-    "contabilidad@valserindustriales.com",
+    # "sst@valserindustriales.com",
+    # "contabilidad@valserindustriales.com",
     "tecnicodeservicios@valserindustriales.com"
 ]
 
